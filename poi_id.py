@@ -4,7 +4,7 @@
 import pickle
 import math
 import sys
-import matplotlib
+import matplotlib.pyplot as plt
 from time import time
 from feature_format import featureFormat, targetFeatureSplit
 from sklearn.cross_validation import train_test_split
@@ -58,12 +58,12 @@ data = featureFormat(data_dict, features)
 for point in data:
     salary = point[0]
     bonus = point[1]
-    matplotlib.pyplot.scatter( salary, bonus )
+    plt.scatter( salary, bonus )
     
 
-matplotlib.pyplot.xlabel("salary")
-matplotlib.pyplot.ylabel("bonus")
-matplotlib.pyplot.show()
+plt.xlabel("salary")
+plt.ylabel("bonus")
+plt.show()
 
 ### Graphical view of from and to emails
 features = ["from_messages", "to_messages"]
@@ -71,12 +71,12 @@ data = featureFormat(data_dict, features)
 for point in data:
     from_messages = point[0]
     to_messages = point[1]
-    matplotlib.pyplot.scatter( from_messages, to_messages )
+    plt.scatter( from_messages, to_messages )
     
 
-matplotlib.pyplot.xlabel("from_messages")
-matplotlib.pyplot.ylabel("to_messages")
-matplotlib.pyplot.show()
+plt.xlabel("from_messages")
+plt.ylabel("to_messages")
+plt.show()
 
 ### Graphical view of from_this_person_to_poi and to from_poi_to_this_person
 features = ["from_this_person_to_poi", "from_poi_to_this_person"]
@@ -84,16 +84,17 @@ data = featureFormat(data_dict, features)
 for point in data:
     from_this_person_to_poi = point[0]
     from_poi_to_this_person = point[1]
-    matplotlib.pyplot.scatter( from_this_person_to_poi, from_poi_to_this_person )
+    plt.scatter( from_this_person_to_poi, from_poi_to_this_person )
     
 
-matplotlib.pyplot.xlabel("from_this_person_to_poi")
-matplotlib.pyplot.ylabel("from_poi_to_this_person")
-matplotlib.pyplot.show()
+plt.xlabel("from_this_person_to_poi")
+plt.ylabel("from_poi_to_this_person")
+plt.show()
 
 ### Remove outliers from the dictionary 
 data_dict.pop("TOTAL", 0)
 data_dict.pop("THE TRAVEL AGENCY IN THE PARK", 0)
+data_dict.pop("LOCKHART EUGENE E",0)
 
 ### Task 3: Create new feature(s)
 ##Add new features
@@ -136,6 +137,13 @@ features_train, features_test, labels_train, labels_test = train_test_split(feat
 clf = DecisionTreeClassifier()
 clf = clf.fit(features_train, labels_train)
 pred = clf.predict(features_test)
+
+importances = clf.feature_importances_
+import numpy as np
+indices = np.argsort(importances)[::-1]
+print 'Feature Ranking for all the initial features selected: '
+for i in range(11):
+    print "feature no. {}: {} ({})".format(i+1,my_features_list[indices[i]+1],importances[indices[i]])
 
 ### calculate and return the accuracy on the test data    
 acc = accuracy_score(pred, labels_test)
@@ -247,7 +255,7 @@ print "features selected by kbest", features_selected
 
 # Access the feature importances
 importances = clf.named_steps['DTC'].feature_importances_
-print "feature importances ", importances
+print "feature importances for the features selected by kbest ", importances
 import numpy as np
 indices = np.argsort(importances)[::-1]
 print 'Feature Ranking: '
