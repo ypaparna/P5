@@ -199,8 +199,7 @@ print "svm accuracy: ", acc
 print "SVM precision score", precision_score(labels_test, pred, average='micro')
 print "SVM recall score", recall_score(labels_test, pred, average='micro')
 
-
-
+#########################
 ### Task 5: Tune your classifier to achieve better than .3 precision and recall 
 ### using our testing script. Check the tester.py script in the final project
 ### folder for details on the evaluation method, especially the test_classifier
@@ -208,36 +207,115 @@ print "SVM recall score", recall_score(labels_test, pred, average='micro')
 ### stratified shuffle split cross validation. For more info: 
 ### http://scikit-learn.org/stable/modules/generated/sklearn.cross_validation.StratifiedShuffleSplit.html
 
-##Explore NaiveBayes further with feature selection and parameter tuning
-
-print "Feature Selection and parameter tuning for NB\n"
+print "Use all 11 features with min/max scaling"
 scaler = MinMaxScaler()
-kbest = SelectKBest(f_classif)
-clf_NB = GaussianNB()
-pipeline =  Pipeline(steps=[('scaling', scaler),("kbest", kbest), ("NB", clf_NB)])
-parameters = {'kbest__k': [1,2,3,4,5,6,7]}
+#kbest = SelectKBest(f_classif)
+clf_DTC = DecisionTreeClassifier(random_state=42)
+pipeline =  Pipeline(steps=[('scaling', scaler), ("DTC", clf_DTC)])
+parameters = {}        
 cv = StratifiedShuffleSplit(labels, 100, random_state = 42)
 gs = GridSearchCV(pipeline, parameters, scoring='f1', cv=cv)
 gs.fit(features, labels)
 
 clf = gs.best_estimator_
-print "NaiveBayes", clf 
 
-# Access the SelectKBest features selected
-features_selected=[my_features_list[i+1] for i in clf.named_steps['kbest'].get_support(indices=True)]
-print "features selected by kbest using NB", features_selected
+# Access the feature importances
+importances = clf.named_steps['DTC'].feature_importances_
+                   
+                        
+print "feature importances", importances
+#print "feature scores for the features selected by kbest with 8 features", scores
+import numpy as np
+indices = np.argsort(importances)[::-1]
+print 'Feature Ranking: '
+for i in range(11):
+    print "feature no. {}: {} ({})".format(i+1,my_features_list[indices[i]+1],importances[indices[i]])
 
-####Validate the above classfier using test_classifier 
+##use this cassifier for validation
 test_classifier(clf, my_dataset, my_features_list)
 
-###Let us also try DecisionTree classifier and kbest to select features and tune parameters 
-print "Feature Selection and parameter tuning for Decision Tree\n"
+print "Feature Selection using select k best - upto 5 features\n"
 scaler = MinMaxScaler()
 kbest = SelectKBest(f_classif)
 clf_DTC = DecisionTreeClassifier(random_state=42)
 pipeline =  Pipeline(steps=[('scaling', scaler),("kbest", kbest), ("DTC", clf_DTC)])
-parameters = {'kbest__k': [1,2,3,4,5,6,7],
-            'DTC__criterion': ['gini', 'entropy'],
+parameters = {'kbest__k': [1,2,3,4,5]}            
+cv = StratifiedShuffleSplit(labels, 100, random_state = 42)
+gs = GridSearchCV(pipeline, parameters, scoring='f1', cv=cv)
+gs.fit(features, labels)
+
+clf = gs.best_estimator_
+
+# Access the SelectKBest features selected
+features_selected=[my_features_list[i+1] for i in clf.named_steps['kbest'].get_support(indices=True)]
+print "features selected by kbest", features_selected
+
+# Access the feature importances
+importances = clf.named_steps['DTC'].feature_importances_
+                        
+print "feature importances for the features selected by kbest upto 5 features ", importances
+
+import numpy as np
+indices = np.argsort(importances)[::-1]
+print 'Feature Ranking: '
+for i in range(len(features_selected)):
+    print "feature no. {}: {} ({})".format(i+1,features_selected[indices[i]],importances[indices[i]])
+
+##use this cassifier for validation
+test_classifier(clf, my_dataset, my_features_list)
+
+
+print "Feature Selection using select k best - upto 3 features\n"
+scaler = MinMaxScaler()
+kbest = SelectKBest(f_classif)
+clf_DTC = DecisionTreeClassifier(random_state=42)
+pipeline =  Pipeline(steps=[('scaling', scaler),("kbest", kbest), ("DTC", clf_DTC)])
+parameters = {'kbest__k': [1,2,3]}            
+cv = StratifiedShuffleSplit(labels, 100, random_state = 42)
+gs = GridSearchCV(pipeline, parameters, scoring='f1', cv=cv)
+gs.fit(features, labels)
+
+clf = gs.best_estimator_
+
+# Access the SelectKBest features selected
+features_selected=[my_features_list[i+1] for i in clf.named_steps['kbest'].get_support(indices=True)]
+print "features selected by kbest", features_selected
+
+# Access the feature importances
+importances = clf.named_steps['DTC'].feature_importances_
+                        
+print "feature importances for the features selected by kbest upto 3 features ", importances
+
+import numpy as np
+indices = np.argsort(importances)[::-1]
+print 'Feature Ranking: '
+for i in range(len(features_selected)):
+    print "feature no. {}: {} ({})".format(i+1,features_selected[indices[i]],importances[indices[i]])
+
+##use this cassifier for validation
+test_classifier(clf, my_dataset, my_features_list)
+
+##Use features selected above and tune parameeters for Decision Tree
+my_feature_list = ['poi',
+'exercised_stock_options',
+'ratio_of_messages_sent_to_poi',
+'salary',
+'bonus',
+'total_stock_value']
+
+data = featureFormat(my_dataset, my_features_list, sort_keys = True)
+labels, features = targetFeatureSplit(data)
+
+
+####Validate the above classfier using test_classifier 
+test_classifier(clf, my_dataset, my_features_list)
+
+###Parameter tuning
+print "Parameter tuning for Decision Tree\n"
+scaler = MinMaxScaler()
+clf_DTC = DecisionTreeClassifier(random_state=42)
+pipeline =  Pipeline(steps=[('scaling', scaler), ("DTC", clf_DTC)])
+parameters = {'DTC__criterion': ['gini', 'entropy'],
             'DTC__min_samples_split': [2, 10, 20],
             'DTC__max_depth': [None, 2, 5, 10],
             'DTC__min_samples_leaf': [1, 5, 10],
@@ -249,18 +327,6 @@ gs.fit(features, labels)
 clf = gs.best_estimator_
 print "decision tree", clf 
 
-# Access the SelectKBest features selected
-features_selected=[my_features_list[i+1] for i in clf.named_steps['kbest'].get_support(indices=True)]
-print "features selected by kbest", features_selected
-
-# Access the feature importances
-importances = clf.named_steps['DTC'].feature_importances_
-print "feature importances for the features selected by kbest ", importances
-import numpy as np
-indices = np.argsort(importances)[::-1]
-print 'Feature Ranking: '
-for i in range(len(features_selected)):
-    print "feature no. {}: {} ({})".format(i+1,features_selected[indices[i]],importances[indices[i]])
 
 ##use this cassifier for validation
 test_classifier(clf, my_dataset, my_features_list)
@@ -272,4 +338,4 @@ test_classifier(clf, my_dataset, my_features_list)
 ### that the version of poi_id.py that you submit can be run on its own and
 ### generates the necessary .pkl files for validating your results.
 
-dump_classifier_and_data(clf, my_dataset, features_list)
+dump_classifier_and_data(clf, my_dataset, my_features_list)
